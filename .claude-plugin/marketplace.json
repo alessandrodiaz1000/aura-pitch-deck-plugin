@@ -1,0 +1,16 @@
+{
+  "name": "aura-pitch-deck",
+  "owner": {
+    "name": "Alessandro Diaz"
+  },
+  "plugins": [
+    {
+      "name": "aura-pitch-deck",
+      "source": "./plugins/aura-pitch-deck",
+      "description": "Presentazioni HTML in stile keynote: struttura e concetti li decidi tu, l'AI fa la resa (poco testo, loghi e foto veri, animazioni)."
+    }
+  ],
+  "metadata": {
+    "description": "Plugin per fare pitch deck HTML animati in stile keynote, con la struttura decisa da chi presenta."
+  }
+}

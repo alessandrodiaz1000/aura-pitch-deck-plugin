@@ -1,0 +1,9 @@
+{
+  "name": "aura-pitch-deck",
+  "displayName": "Aura Pitch Deck",
+  "version": "0.1.0",
+  "description": "Presentazioni HTML interattive in stile keynote alla Steve Jobs: pochissimo testo, loghi e foto ufficiali che compaiono a ogni clic, schemi animati per i concetti complessi, passaggio ai colori del cliente. Struttura e concetti li decide chi presenta.",
+  "author": {
+    "name": "Alessandro Diaz"
+  }
+}

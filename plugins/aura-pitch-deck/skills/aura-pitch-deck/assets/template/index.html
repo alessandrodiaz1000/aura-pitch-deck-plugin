@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="it" data-theme="light" data-ospite-tema="light">
+<!-- data-theme: "light" (fondo bianco) o "dark" (fondo nero, stile keynote): si chiede all'inizio.
+     data-ospite-tema: il fondo della sezione del cliente, se c'è ("light" o "dark"). -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TITOLO DEL DECK</title>
+<style>
+/* =====================================================================
+   1. MARCHI. Si cambia quasi solo qui: font, colori, misure dei loghi.
+   ===================================================================== */
+/* Font scaricati in font/ con scripts/font.py (funziona senza rete) */
+@font-face { font-family: "Display"; font-weight: 100 900; font-style: normal; font-display: block; src: url("font/display.woff2") format("woff2"); }
+@font-face { font-family: "Ospite"; font-weight: 100 900; font-style: normal; font-display: block; src: url("font/ospite.woff2") format("woff2"); }
+
+:root {
+  /* Chi presenta, tema chiaro */
+  --bg: #ffffff; --ink: #15161a; --soft: #55595f; --muted: #8a8f98; --line: #e9e7e1; --wash: #f6f5f2;
+  --accent: #ffb302;     /* l'unico colore: poco, sulla cosa di cui si parla */
+  --drop: #0b0b0d;       /* fondo delle scene a tutto schermo (.bleed) */
+  --display: "Display", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Il cliente a cui si presenta (sezione con data-ospite): i suoi colori e il suo font */
+  --g-bg: #ffffff; --g-ink: #040b51; --g-accent: #ffcd00; --g-muted: #5d6c7b; --g-line: #e2e6ee; --g-wash: #f4f6f9;
+  --g-drop: #040b51;     /* fondo dell'apertura a tutto schermo della sua sezione */
+  --g-display: "Ospite", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ok: #17734a; --stop: #b3261e;
+  /* Movimento */
+  --ease: cubic-bezier(.22, .7, .2, 1); --zoom: cubic-bezier(.6, .05, .2, 1);
+  /* Marchi, in px del palco: larghezza in alto a sinistra, larghezza quando è grande al centro, altezza in copertina */
+  --logo-w: 150px; --hero-w: 520px; --hero-y: 470px;
+  --glogo-w: 180px; --ghero-w: 700px;
+  --cover-h: 110px; --cover-y: 494px;
+  --k: 1; --ox: 0px; --oy: 0px;
+}
+/* Tema scuro: nero pieno, testo quasi bianco */
+html[data-theme="dark"] { --bg: #000000; --ink: #f5f5f7; --soft: #a1a1a6; --muted: #6e6e73; --line: #2c2c30; --wash: #141416; --drop: #000000; }
+
+/* =====================================================================
+   2. PALCO E CORNICE. Non serve toccarli.
+   ===================================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; font-family: var(--text); -webkit-font-smoothing: antialiased; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { transition: background-color .6s ease; }
+html.in-ospite, html.in-ospite body { background: var(--g-bg); }
+html.idle, html.idle * { cursor: none !important; }
+html.still * { transition: none !important; }
+img { display: block; }
+i, em { font-style: normal; }
+
+/* Il palco è 1920x1080 e si adatta alla finestra: tutte le misure sono in quei pixel. */
+.fit { position: fixed; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; transform: translate(var(--ox), var(--oy)) scale(var(--k)); }
+.stage { z-index: 1; }
+.slide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s linear .6s; }
+.slide.active { opacity: 1; visibility: visible; transition: opacity .6s ease, visibility 0s; }
+.slide[data-ospite] { color: var(--g-ink); }
+
+/* Cornice: marchio di chi presenta, marchio del cliente, etichetta, numero */
+.chrome { z-index: 3; pointer-events: none; color: var(--ink); }
+.logo, .glogo { position: absolute; left: 96px; top: 68px; transform-origin: 0 0; transition: transform 1s var(--ease), opacity .5s ease; }
+.logo { width: var(--logo-w); }
+.glogo { width: var(--glogo-w); opacity: 0; transform: translate(var(--gtx, 0px), var(--gty, 0px)) scale(var(--gts, 1)); }
+.logo img, .glogo img { width: 100%; height: auto; transition: opacity .5s ease; }
+.logo .on-dark, .glogo .on-dark { position: absolute; left: 0; top: 0; opacity: 0; }
+.chrome.scuro .on-light { opacity: 0; }
+.chrome.scuro .on-dark { opacity: 1; }
+.chrome.title .logo { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--ts, 1)); }
+.chrome.hero .logo { transform: translate(var(--hx, 0px), var(--hy, 0px)) scale(var(--hs, 1)); }
+.chrome.ospite .logo { transform: translate(0px, var(--sy, 900px)) scale(.6); }   /* nella sezione del cliente: firma piccola in basso */
+.chrome.ospite .glogo { opacity: 1; transform: none; }
+.chrome.ospite.title .glogo { transform: translate(var(--gtx, 0px), var(--gty, 0px)) scale(var(--gts, 1)); transition-delay: .45s; }
+.label, .count { position: absolute; right: 96px; color: var(--muted); transition: opacity .5s ease, color .5s ease; }
+.label { top: 82px; font: 600 19px/1 var(--text); letter-spacing: .16em; text-transform: uppercase; }
+.count { bottom: 64px; font: 500 18px/1 var(--text); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.chrome.title .label, .chrome.title .count, .chrome.hero .label, .chrome.hero .count, .chrome.scena .label, .chrome.scena .count { opacity: 0; }
+.chrome.ospite .label, .chrome.ospite .count { color: var(--g-muted); }
+/* Finché una slide ha più opzioni: quale si sta guardando (sparisce quando ne resta una) */
+.opt { position: absolute; left: 0; right: 0; bottom: 62px; text-align: center; font: 500 17px/1 var(--text); color: var(--muted); opacity: 0; transition: opacity .4s ease; }
+.opt.on { opacity: 1; }
+
+/* =====================================================================
+   3. MATTONI. Classi pronte per le slide (gli schemi completi sono in references/schemi.md).
+   ===================================================================== */
+/* Entrate: class="fx" data-from="1" style="--d:.3s" (--d = ritardo, per entrare a scalare) */
+.fx, .fx-zoom, .fx-fade { opacity: 0; transition: opacity .6s ease, transform .9s var(--ease); }
+.fx { transform: translateY(16px); }
+.fx-zoom { transform: scale(.92); }
+.fx.on, .fx-zoom.on, .fx-fade.on { opacity: 1; transform: none; transition-delay: var(--d, .15s); }
+
+/* Copertina: marchio di chi presenta (è quello della cornice, che poi vola in alto a sinistra),
+   la x e il marchio del cliente. Le posizioni le calcola lo script. */
+.lock-x { position: absolute; width: 70px; text-align: center; font: 300 64px/80px var(--text); color: var(--muted); }
+.lock-guest { position: absolute; display: flex; height: var(--cover-h); }
+.lock-guest img { height: 100%; width: auto; }
+.lock-guest .on-dark { display: none; }
+html[data-theme="dark"] .lock-guest .on-light { display: none; }
+html[data-theme="dark"] .lock-guest .on-dark { display: block; }
+/* Loghi tutti di un colore (neri) nel tema scuro: class="mono" li fa diventare bianchi. Solo se il marchio è davvero monocromatico. */
+html[data-theme="dark"] .slide:not([data-ospite]) .mono { filter: brightness(0) invert(1); }
+.for { position: absolute; left: 0; right: 0; top: calc(var(--cover-y) + var(--cover-h) / 2 + 64px); text-align: center; font: 500 26px/1 var(--text); color: var(--muted); }
+
+/* Frasi */
+.say { position: absolute; left: 0; right: 0; top: 200px; text-align: center; font: 800 80px/1.05 var(--display); letter-spacing: -.04em; }
+.big { position: absolute; left: 140px; right: 140px; top: 540px; text-align: center; font: 800 112px/1.04 var(--display); letter-spacing: -.045em; text-wrap: balance; opacity: 0; transform: translateY(calc(-50% + 20px)); transition: opacity .6s ease, transform 1s var(--ease); }
+.big.on { opacity: 1; transform: translateY(-50%); transition-delay: var(--d, .15s); }
+.lede { position: absolute; left: 160px; right: 160px; top: calc(var(--hero-y) + 150px); text-align: center; font: 600 44px/1.3 var(--display); letter-spacing: -.02em; color: var(--soft); text-wrap: balance; }
+.kicker { font: 600 19px/1 var(--text); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.accent-block { display: inline-block; width: .42em; height: .86em; margin-left: .08em; vertical-align: -.07em; background: var(--accent); }
+
+/* Persone: foto rotonde. Se manca il file resta un segnaposto con le iniziali (onerror="ph(this)") */
+.person { position: absolute; width: 300px; margin-left: -150px; text-align: center; transform-origin: 150px 125px; }
+.face { display: block; width: 250px; height: 250px; margin: 0 auto; border-radius: 50%; overflow: hidden; background: var(--wash); }
+.face img { width: 100%; height: 100%; object-fit: cover; }
+.face.ph { display: grid; place-items: center; font: 700 84px/1 var(--display); letter-spacing: -.04em; color: var(--muted); }
+.person b { display: block; margin-top: 28px; font: 700 34px/1.15 var(--display); letter-spacing: -.03em; }
+.person i { display: block; margin-top: 8px; font: 500 19px/1.3 var(--text); color: var(--soft); }
+
+/* Voci in fila (loghi, tappe, prodotti): ognuna entra grande al centro (spot), poi va al suo posto (dock).
+   data-spot="k" = il passo in cui entra. Se non hanno left/--dx, lo script le mette in fila da solo. */
+.item { position: absolute; top: 352px; width: 560px; margin-left: -280px; text-align: center; transform-origin: 50% 50%; transition: opacity .6s ease, transform 1s var(--ease); --s: 1.7; }
+.item .art { height: 250px; display: flex; align-items: center; justify-content: center; }
+.item .art img { max-width: 100%; max-height: 100%; }
+.item b { display: block; margin-top: 36px; font: 700 42px/1.1 var(--display); letter-spacing: -.035em; }
+.item i { display: block; margin-top: 14px; font: 500 22px/1.35 var(--text); color: var(--soft); }
+.slide[data-ospite] .item b { font-family: var(--g-display); }
+.slide[data-ospite] .item i { color: var(--g-muted); }
+.item.off { opacity: 0; transform: translateX(var(--dx, 0px)) scale(calc(var(--s) * .93)); pointer-events: none; }
+.item.spot { opacity: 1; transform: translateX(var(--dx, 0px)) scale(var(--s)); }
+.item.dock { opacity: 1; transform: none; cursor: zoom-in; }
+.item.gone { opacity: 0; transform: scale(.96); pointer-events: none; }
+.item.back { opacity: .32; }
+.item.dim { opacity: .1; }
+
+/* Il riquadro vuoto (tratteggiato): "la cosa che non c'è ancora". Se c'è un'apertura (.bleed.portal), parte da qui. */
+.void { position: relative; display: block; width: 400px; height: 248px; color: var(--muted); transition: color .3s ease, transform .5s var(--ease); }
+.void svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.item.dock:hover .void { color: var(--ink); transform: scale(1.03); }
+
+/* Scene a tutto schermo (foto, momento forte): il fondo copre tutta la finestra */
+.bleed { position: fixed; inset: 0; z-index: 2; background: var(--drop); color: #fff; overflow: hidden; opacity: 0; visibility: hidden; transition: opacity .7s ease, visibility 0s linear .7s; }
+.bleed.on { opacity: 1; visibility: visible; transition: opacity .7s ease, visibility 0s; }
+.over > * { position: absolute; opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .9s var(--ease); }
+.bleed.on .over > * { opacity: 1; transform: none; transition-delay: var(--d, .2s); }
+.over .photo { object-fit: cover; border-radius: 20px; }
+/* L'apertura della sezione del cliente: il suo colore parte dal riquadro vuoto e riempie la finestra */
+.bleed.portal { background: var(--g-drop); clip-path: inset(var(--pt, 36vh) var(--pr, 10vw) var(--pb, 42vh) var(--pl, 69vw) round var(--pq, 14px)); transition: clip-path .9s var(--zoom), opacity .2s ease .78s, visibility 0s linear 1s; }
+.bleed.portal.on { clip-path: inset(0 0 0 0 round 0px); transition: clip-path 1s var(--zoom), opacity .12s ease, visibility 0s; }
+.bleed.portal.past { clip-path: inset(0 0 0 0 round 0px); transition: opacity .6s ease, visibility 0s linear .6s; }
+
+/* Schemi animati (concetti): fili che si disegnano, puntini che scorrono, frecce, persone, didascalie.
+   <g class="w" data-from="3"><path class="l" pathLength="1" d="..."/><path class="f" d="..."/><path class="h" d="..."/></g> */
+.wires { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: visible; pointer-events: none; }
+.w .l { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .45s ease; }
+.w.on .l { stroke-dashoffset: 0; transition: stroke-dashoffset .9s var(--ease) var(--d, .35s); }
+.w .h { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: opacity .2s ease; }
+.w.on .h { opacity: 1; transition: opacity .3s ease calc(var(--d, .35s) + .75s); }
+.w .f { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1 39; opacity: 0; animation: flow 1.6s linear infinite; transition: opacity .2s ease; }
+.slide[data-ospite] .w .f { stroke: var(--g-accent); }
+.w.on .f { opacity: 1; transition: opacity .5s ease calc(var(--d, .35s) + .95s); }
+@keyframes flow { to { stroke-dashoffset: -40; } }
+.av { display: inline-grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 50%; background: currentColor; }
+.av > span { color: var(--bg); font: 800 22px/1 var(--display); }
+.slide[data-ospite] .av > span { color: var(--g-bg); font-family: var(--g-display); }
+.cap { position: absolute; left: 0; right: 0; top: 902px; text-align: center; font: 700 40px/1.1 var(--display); letter-spacing: -.015em; opacity: 0; transform: translateY(10px); transition: opacity .35s ease, transform .6s var(--ease); }
+.slide[data-ospite] .cap { font-family: var(--g-display); }
+.cap.on { opacity: 1; transform: none; transition: opacity .5s ease .5s, transform .8s var(--ease) .5s; }
+
+/* =====================================================================
+   4. LE SLIDE DI QUESTO DECK (CSS proprio, con un prefisso per slide)
+   ===================================================================== */
+
+
+/* =====================================================================
+   5. STAMPA E PROVINI. Non serve toccarli.
+   ===================================================================== */
+/* index.html?print: una pagina per ogni fotogramma in data-print */
+@page { size: 1920px 1080px; margin: 0; }
+html.print, html.print body { height: auto; overflow: visible; }
+html.print * { transition: none !important; animation: none !important; }
+html.print .fit { position: absolute; transform: none; }
+html.print .bleed { position: absolute; }
+html.print .opt { display: none; }
+html.print .sheet { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); break-after: page; page-break-after: always; }
+html.print .sheet.ospite { background: var(--g-bg); }
+@media screen {
+  html.print body { zoom: var(--pz, 1); background: #d9d6cf; }
+  html.print .sheet { margin-bottom: 24px; }
+}
+/* index.html?provini: una riga per opzione con tutti i suoi passi, per confrontarle */
+html.provini body { zoom: 1; padding: 48px 56px 96px; background: #eeece6; }
+html.provini h2 { margin: 52px 0 20px; font: 700 30px/1.2 var(--text); color: #15161a; }
+html.provini h2:first-child { margin-top: 0; }
+html.provini h2 small { margin-left: 14px; font: 500 18px/1 var(--text); color: #55595f; }
+html.provini .row { display: flex; flex-wrap: wrap; gap: 22px; }
+html.provini .sheet { zoom: .29; flex: none; margin: 0; border-radius: 28px; box-shadow: 0 0 0 3px #d9d6cf; }
+@media (prefers-reduced-motion: reduce) { * { transition-duration: .01s !important; animation: none !important; } }
+</style>
+<script>
+/* Se manca la foto di una persona resta un segnaposto con le iniziali (data-ph). */
+function ph(img) { var f = img.parentNode; f.classList.add('ph'); f.textContent = img.getAttribute('data-ph'); }
+</script>
+</head>
+<body>
+
+<main class="fit stage" id="stage">
+
+  <!-- COPERTINA. Il marchio di chi presenta è quello della cornice (sotto): qui al passo 0 sta grande,
+       al passo dopo vola in alto a sinistra. Se il pitch è per un cliente, accanto: la x e il suo logo.
+       Senza cliente: togliere .lock-x e .lock-guest. -->
+  <section class="slide" id="copertina" data-beats="1" data-label="" data-title="0" data-print="0">
+    <span class="lock-x fx-fade" data-until="0" aria-hidden="true">×</span>
+    <span class="lock-guest fx-fade" data-until="0"><img class="on-light" src="img/cliente.svg" alt="CLIENTE"><img class="on-dark" src="img/cliente-su-scuro.svg" alt=""></span>
+    <p class="for fx-fade" data-until="0">DATA O OCCASIONE</p>
+  </section>
+
+  <!-- ESEMPIO di slide con una frase: sostituire o togliere -->
+  <section class="slide" id="frase" data-beats="1" data-label="ETICHETTA" data-print="0">
+    <p class="big" data-from="0">Una frase sola, grande.</p>
+  </section>
+
+</main>
+
+<!-- Scene a tutto schermo e apertura della sezione del cliente: vedi references/schemi.md -->
+
+<div class="fit chrome title" id="chrome">
+  <span class="logo"><img class="on-light" src="img/logo.svg" alt="MARCHIO"><img class="on-dark" src="img/logo-su-scuro.svg" alt=""></span>
+  <span class="glogo"><img class="on-light" src="img/cliente.svg" alt="CLIENTE"><img class="on-dark" src="img/cliente-su-scuro.svg" alt=""></span>
+  <span class="label"></span>
+  <span class="count"></span>
+  <span class="opt"></span>
+</div>
+
+<script>
+/* =====================================================================
+   MOTORE. Non serve toccarlo. Attributi che legge:
+   slide:  data-beats (quanti passi), data-label (etichetta), data-label-N (etichetta dal passo N),
+           data-print (passi nel PDF), data-title="0" (marchio in copertina a quei passi),
+           data-hero (marchio grande al centro), data-ospite (sezione del cliente: suoi colori e logo),
+           data-nocount (non contata nel numero), data-opt + data-name (opzioni alternative, tasto O)
+   elementi: data-from / data-until (classe on tra quei passi), .item con data-spot (entra grande al centro),
+           data-dock (entra già al suo posto), data-peek (si ingrandisce al clic), data-bleed (la sua scena è a tutto schermo)
+   scene:  .bleed con data-slide (id della slide) e data-beat (passi), .bleed.portal (parte dal riquadro .void)
+   indirizzo: #7 (passo 7), ?print, ?print&auto, ?provini, ?still (senza movimento), ?play=500#7 (movimento fermo a 500 ms), ?o=b
+   ===================================================================== */
+(function () {
+  var root = document.documentElement;
+  var stage = document.getElementById('stage');
+  var chrome = document.getElementById('chrome');
+  var all = [].slice.call(stage.querySelectorAll('.slide'));
+  var bleeds = [].slice.call(document.querySelectorAll('.bleed'));
+  var portal = document.querySelector('.bleed.portal');
+  var Q = location.search;
+  var PRINT = /[?&]print\b/.test(Q), PROVINI = /[?&]provini\b/.test(Q);
+  if (/[?&]still\b/.test(Q)) root.classList.add('still');
+
+  /* Opzioni: le slide con data-opt sono alternative tra loro e se ne mostra una (?o=b, tasto O). */
+  var opts = [];
+  all.forEach(function (sl) { var o = sl.getAttribute('data-opt'); if (o && opts.indexOf(o) < 0) opts.push(o); });
+  var m = /[?&]o=(\w+)/.exec(Q);
+  var opt = m && opts.indexOf(m[1]) >= 0 ? m[1] : (opts[0] || null);
+  var slides, counted, frames;
+  function pick(o) {
+    opt = o;
+    slides = all.filter(function (sl) { var k = sl.getAttribute('data-opt'); return !k || k === opt; });
+    counted = slides.filter(function (sl) { return !sl.hasAttribute('data-nocount'); });
+    frames = [];
+    slides.forEach(function (sl, s) { for (var b = 0, n = +sl.getAttribute('data-beats'); b < n; b++) frames.push({ s: s, b: b }); });
+  }
+  pick(opt);
+
+  function has(list, b) { return (' ' + list + ' ').indexOf(' ' + b + ' ') >= 0; }
+  function css(name, fb) { var v = parseFloat(getComputedStyle(root).getPropertyValue(name)); return isNaN(v) ? fb : v; }
+
+  /* Mette una slide (o una scena) nello stato del passo b; peek è la voce ingrandita con un clic. */
+  function apply(slide, b, peek) {
+    slide.setAttribute('data-b', b);
+    [].forEach.call(slide.querySelectorAll('[data-from], [data-until]'), function (el) {
+      if (el.hasAttribute('data-spot')) return;
+      var from = el.hasAttribute('data-from') ? +el.getAttribute('data-from') : -1;
+      var until = el.hasAttribute('data-until') ? +el.getAttribute('data-until') : 99;
+      el.classList.toggle('on', b >= from && b <= until);
+    });
+    [].forEach.call(slide.querySelectorAll('.item'), function (el) {
+      var k = +el.getAttribute('data-spot');
+      var until = el.hasAttribute('data-until') ? +el.getAttribute('data-until') : 99;
+      var full = el.hasAttribute('data-bleed') || el.hasAttribute('data-dock');
+      var id = el.getAttribute('data-peek');
+      var st = b < k ? 'off' : b > until ? 'gone' : (b === k && !full) ? 'spot' : 'dock';
+      var dim = false;
+      if (peek && st === 'dock') { if (id === peek && !full) st = 'spot'; else dim = true; }
+      ['off', 'spot', 'dock', 'gone'].forEach(function (c) { el.classList.toggle(c, c === st); });
+      el.classList.toggle('dim', dim);
+    });
+    var lit = !peek && slide.querySelector('.item.spot');
+    [].forEach.call(slide.querySelectorAll('.item'), function (el) { el.classList.toggle('back', !!lit && el.classList.contains('dock')); });
+  }
+
+  function bleedOn(bl, slide, b) {
+    if (bl.getAttribute('data-slide') !== slide.id) return false;
+    var bs = bl.getAttribute('data-beat');
+    return bs === null || has(bs, b);
+  }
+
+  function setChrome(el, slide, b, scena) {
+    var ospite = slide.hasAttribute('data-ospite');
+    el.classList.toggle('title', has(slide.getAttribute('data-title') || '', b));
+    el.classList.toggle('hero', slide.hasAttribute('data-hero'));
+    el.classList.toggle('ospite', ospite);
+    el.classList.toggle('scena', scena);
+    var darkBg = ospite ? root.getAttribute('data-ospite-tema') === 'dark' : root.getAttribute('data-theme') === 'dark';
+    el.classList.toggle('scuro', scena || darkBg);
+    var lab = slide.getAttribute('data-label') || '';
+    for (var j = 0; j <= b; j++) if (slide.hasAttribute('data-label-' + j)) lab = slide.getAttribute('data-label-' + j);
+    el.querySelector('.label').textContent = lab;
+    var i = counted.indexOf(slide);
+    el.querySelector('.count').textContent = i < 0 ? '' : (i + 1) + ' / ' + counted.length;
+    var o = el.querySelector('.opt'), many = opts.length > 1 && slide.hasAttribute('data-opt');
+    o.classList.toggle('on', many);
+    if (many) o.textContent = 'Opzione ' + slide.getAttribute('data-opt').toUpperCase() + ' di ' + opts.length + ' · ' + (slide.getAttribute('data-name') || '') + ' · tasto O per cambiare';
+  }
+
+  /* Posizioni del marchio calcolate dalle misure vere dei loghi: copertina, centro, firma, apertura del cliente.
+     Mette anche in fila da sole le voci .item che non hanno una posizione scritta. */
+  function place() {
+    var L = chrome.querySelector('.logo'), G = chrome.querySelector('.glogo');
+    var lw = L.offsetWidth, lh = L.offsetHeight;
+    var set = function (k, v) { chrome.style.setProperty(k, v); };
+    if (lw && lh) {
+      var heroW = css('--hero-w', 520), heroY = css('--hero-y', 470), hs = heroW / lw;
+      set('--hs', hs); set('--hx', (960 - heroW / 2 - 96) + 'px'); set('--hy', (heroY - lh * hs / 2 - 68) + 'px');
+      set('--sy', (1012 - lh * .6 - 68) + 'px');
+      var H = css('--cover-h', 110), cy = css('--cover-y', 494), ts = H / lh, wl = lw * ts;
+      var x = document.querySelector('.slide[data-title] .lock-x'), g = document.querySelector('.slide[data-title] .lock-guest');
+      var wg = g && g.offsetWidth;
+      if (x && g && wg) {
+        var gap = 48, wx = 70, x0 = 960 - (wl + gap + wx + gap + wg) / 2;
+        set('--ts', ts); set('--tx', (x0 - 96) + 'px'); set('--ty', (cy - H / 2 - 68) + 'px');
+        x.style.left = (x0 + wl + gap) + 'px'; x.style.top = (cy - 42) + 'px';
+        g.style.left = (x0 + wl + gap + wx + gap) + 'px'; g.style.top = (cy - H / 2) + 'px';
+      } else {
+        set('--ts', hs); set('--tx', (960 - heroW / 2 - 96) + 'px'); set('--ty', (heroY - lh * hs / 2 - 68) + 'px');
+      }
+    }
+    var gw = G.offsetWidth, gh = G.offsetHeight;
+    if (gw && gh) {
+      var gW = css('--ghero-w', 700), gs = gW / gw;
+      set('--gts', gs); set('--gtx', (960 - gW / 2 - 96) + 'px'); set('--gty', (css('--hero-y', 470) - gh * gs / 2 - 68) + 'px');
+    }
+    all.forEach(function (sl) {
+      var its = [].slice.call(sl.querySelectorAll('.item')).filter(function (it) { return !it.style.left; });
+      var n = its.length; if (!n) return;
+      var step = Math.min(560, 1600 / n);
+      its.forEach(function (it, i) {
+        var left = 960 + (i - (n - 1) / 2) * step;
+        it.style.left = left + 'px'; it.style.setProperty('--dx', (960 - left) + 'px');
+        if (n > 3) { it.style.width = (step - 30) + 'px'; it.style.marginLeft = (-(step - 30) / 2) + 'px'; }
+      });
+    });
+  }
+
+  function sheet(slide, b) {
+    var el = document.createElement('div');
+    el.className = 'sheet' + (slide.hasAttribute('data-ospite') ? ' ospite' : '');
+    var copy = slide.cloneNode(true);
+    copy.removeAttribute('id'); copy.classList.add('active');
+    apply(copy, b, null);
+    el.appendChild(copy);
+    var scena = false;
+    bleeds.forEach(function (bl) {
+      if (!bleedOn(bl, slide, b)) return;
+      var c = bl.cloneNode(true); c.removeAttribute('id'); c.classList.add('on');
+      apply(c, b, null); el.appendChild(c); scena = true;
+    });
+    var ch = chrome.cloneNode(true); ch.removeAttribute('id');
+    setChrome(ch, slide, b, scena);
+    el.appendChild(ch);
+    return el;
+  }
+
+  if (PRINT || PROVINI) {
+    root.classList.add('print');
+    addEventListener('load', function () {
+      place();
+      var out = document.createDocumentFragment();
+      if (PROVINI) {
+        root.classList.add('provini');
+        var list = all.filter(function (sl) { return sl.hasAttribute('data-opt'); });
+        if (!list.length) list = slides;
+        list.forEach(function (slide) {
+          var n = +slide.getAttribute('data-beats');
+          var h = document.createElement('h2');
+          h.textContent = slide.hasAttribute('data-opt') ? 'Opzione ' + slide.getAttribute('data-opt').toUpperCase() + ' · ' + (slide.getAttribute('data-name') || '') : (slide.getAttribute('data-label') || slide.id);
+          var sm = document.createElement('small'); sm.textContent = n + (n === 1 ? ' passo' : ' passi'); h.appendChild(sm);
+          var row = document.createElement('div'); row.className = 'row';
+          for (var b = 0; b < n; b++) row.appendChild(sheet(slide, b));
+          out.appendChild(h); out.appendChild(row);
+        });
+      } else {
+        slides.forEach(function (slide) {
+          (slide.getAttribute('data-print') || '').split(' ').filter(Boolean).forEach(function (bs) { out.appendChild(sheet(slide, +bs)); });
+        });
+      }
+      [stage, chrome].concat(bleeds).forEach(function (el) { el.remove(); });
+      document.body.appendChild(out);
+      var pz = function () { root.style.setProperty('--pz', Math.min(1, innerWidth / 1920)); };
+      pz(); addEventListener('resize', pz);
+      if (/[?&]auto\b/.test(Q)) setTimeout(function () { print(); }, 400);
+    });
+    return;
+  }
+
+  var cur = -1, peek = null, frozen = false;
+
+  function address(n) {
+    var q = Q.replace(/^\?/, '').split('&').filter(function (p) { return p && !/^o=/.test(p); });
+    if (opts.length > 1) q.push('o=' + opt);
+    return (q.length ? '?' + q.join('&') : location.pathname) + '#' + (n + 1);
+  }
+
+  function show(n, instant) {
+    n = Math.max(0, Math.min(frames.length - 1, n));
+    var f = frames[n], prev = cur < 0 ? null : frames[cur];
+    var slide = slides[f.s];
+    if (!instant && (!prev || prev.s < f.s)) { apply(slide, -1, null); void slide.offsetWidth; }   /* entrando in avanti si parte da vuoto */
+    all.forEach(function (el) { el.classList.toggle('active', el === slide); });
+    apply(slide, f.b, peek);
+    var scena = false;
+    bleeds.forEach(function (bl) {
+      var on = bleedOn(bl, slide, f.b) || (peek && bl.getAttribute('data-peek') === peek);
+      var home = slides.indexOf(document.getElementById(bl.getAttribute('data-slide')));
+      if (on) { apply(bl, f.b, null); scena = true; }
+      bl.classList.toggle('on', !!on);
+      bl.classList.toggle('past', !on && home >= 0 && home <= f.s);
+    });
+    root.classList.toggle('in-ospite', slide.hasAttribute('data-ospite'));
+    setChrome(chrome, slide, f.b, scena);
+    cur = n;
+    try { history.replaceState(null, '', address(n)); } catch (e) {}
+  }
+
+  function next() { if (peek) { peek = null; show(cur); } else show(cur + 1); }
+  function back() { if (peek) { peek = null; show(cur); } else show(cur - 1); }
+
+  function swap(dir) {
+    if (opts.length < 2) return;
+    var here = slides[frames[cur].s], b = frames[cur].b, onOpt = here.hasAttribute('data-opt');
+    pick(opts[(opts.indexOf(opt) + dir + opts.length) % opts.length]);
+    var target = onOpt ? slides.filter(function (sl) { return sl.hasAttribute('data-opt'); })[0] : here;
+    var s = slides.indexOf(target), n = 0;
+    while (frames[n].s !== s) n++;
+    peek = null; cur = -1;
+    show(onOpt ? n : n + b, !onOpt);
+  }
+
+  function fit() {
+    var k = Math.min(innerWidth / 1920, innerHeight / 1080);
+    root.style.setProperty('--k', k);
+    root.style.setProperty('--ox', (innerWidth - 1920 * k) / 2 + 'px');
+    root.style.setProperty('--oy', (innerHeight - 1080 * k) / 2 + 'px');
+  }
+
+  /* Dov'è il riquadro vuoto quando è al suo posto: da lì parte (e lì torna) l'apertura. */
+  function aim() {
+    if (!portal || cur < 0 || frozen) return;
+    var sl = null;
+    slides.forEach(function (s) { if (!sl && s.querySelector('.void')) sl = s; });
+    if (!sl) return;
+    var was = root.classList.contains('still'), keep = sl.getAttribute('data-b');
+    root.classList.add('still');
+    apply(sl, +sl.getAttribute('data-beats') - 1, null);
+    var r = sl.querySelector('.void').getBoundingClientRect();
+    if (keep !== null) apply(sl, +keep, sl === slides[frames[cur].s] ? peek : null);
+    portal.style.setProperty('--pt', r.top + 'px');
+    portal.style.setProperty('--pr', (innerWidth - r.right) + 'px');
+    portal.style.setProperty('--pb', (innerHeight - r.bottom) + 'px');
+    portal.style.setProperty('--pl', r.left + 'px');
+    portal.style.setProperty('--pq', (r.width * .056) + 'px');
+    void sl.offsetWidth; void portal.offsetWidth;
+    if (!was) root.classList.remove('still');
+  }
+
+  function settle() { if (frozen) return; place(); aim(); }
+
+  fit();
+  addEventListener('resize', function () { fit(); aim(); });
+
+  addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'PageDown' || k === 'Enter') { e.preventDefault(); next(); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace') { e.preventDefault(); back(); }
+    else if (k === 'Home') { peek = null; show(0); }
+    else if (k === 'End') { peek = null; show(frames.length - 1); }
+    else if (k === 'Escape') { if (peek) { peek = null; show(cur); } }
+    else if (k === 'f' || k === 'F') { if (document.fullscreenElement) document.exitFullscreen(); else if (root.requestFullscreen) root.requestFullscreen(); }
+    else if (k === 'o') swap(1);
+    else if (k === 'O') swap(-1);
+    else if (k === 't' || k === 'T') { open(location.pathname + '?provini'); }
+    else if (k === 'p' || k === 'P') { open(location.pathname + '?print&auto' + (opts.length > 1 ? '&o=' + opt : '')); }
+  });
+
+  /* Clic: avanti. Clic su una voce già al suo posto con data-peek: la ingrandisce (il clic dopo la rimette). */
+  addEventListener('click', function (e) {
+    if (peek) { peek = null; show(cur); return; }
+    var it = e.target.closest ? e.target.closest('.item.dock') : null;
+    if (it && it.getAttribute('data-peek')) { peek = it.getAttribute('data-peek'); show(cur); return; }
+    next();
+  });
+
+  var x0 = null;
+  addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 50) { if (dx < 0) next(); else back(); }
+  }, { passive: true });
+
+  var idle;
+  addEventListener('mousemove', function () {
+    root.classList.remove('idle'); clearTimeout(idle);
+    idle = setTimeout(function () { root.classList.add('idle'); }, 2500);
+  });
+
+  /* #7 = passo 7. ?play parte dal passo prima e ci arriva (?play&back dal passo dopo);
+     ?play=400 ferma il movimento a 400 ms, per controllarlo in una foto. */
+  var start = parseInt(location.hash.slice(1), 10);
+  start = isNaN(start) ? 0 : start - 1;
+  place();
+  var play = /[?&]play(?:=(\d+))?\b/.exec(Q);
+  if (play) {
+    show(Math.max(0, /[?&]back\b/.test(Q) ? start + 1 : start - 1), true); aim();
+    void document.body.offsetWidth;
+    var go = function () {
+      show(start);
+      if (!play[1] || !document.getAnimations) return;
+      frozen = true;
+      document.getAnimations().forEach(function (a) { if (a.transitionProperty) { a.pause(); a.currentTime = +play[1]; } });
+    };
+    if (play[1]) addEventListener('load', function () { settle(); go(); }); else setTimeout(go, 400);
+  } else { show(start, true); aim(); }
+  addEventListener('load', settle);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(settle);
+})();
+</script>
+</body>
+</html>
